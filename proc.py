@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
-import socket
+import os
+import sys
 import math
 import struct
 
@@ -57,25 +58,21 @@ def denseFlow(data, ang_min, ang_max):
   bgr = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
   img = cv2.resize(bgr, (0,0), fx=4, fy=4)
   return img
-  
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(('raspberrypi.local', 1234))
+
+def proc(data):
+  #res = denseFlow(data, 0, 360)
+  res = vectorFlow(data)
+  cv2.imshow('image',res)
+  cv2.waitKey(1)
 
 framedata = []
+stdin_no = sys.stdin.fileno()
 while 1:
-    data = s.recv(1024)
-    if not data: break
-    
+    data = os.read(stdin_no, 1024)
     framedata.extend(struct.unpack('>%db' % len(data), data))
     while (len(framedata)) >= framelength:
-      proc = convImg(framedata, width, height)
-      #print(proc)
-      #showFlowProc(proc)
-      res = denseFlow(proc, 0, 360)
-      cv2.imshow('image',res)
-      cv2.waitKey(1)
-      #showFlow(framedata)
-      #showDenseFlow(framedata, 0, 360)
+      data = convImg(framedata, width, height)
+      proc(data)
       framedata = framedata[framelength:]
 
 cv2.destroyAllWindows()
